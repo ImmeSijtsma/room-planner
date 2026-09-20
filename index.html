@@ -1,0 +1,57 @@
+<!doctype html><html lang="nl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e9b6b8"><link rel="manifest" href="manifest.json"><title>Room Planner</title>
+<style>
+:root{--a:#d99599;--bg:#faf2e7;--card:#fff;--line:#e7ddd2;--text:#302b28;--muted:#756b64}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#fffaf3,#f3e7df);font-family:system-ui,sans-serif;color:var(--text)}
+.app{max-width:1250px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:16px}.title{font-size:30px;font-weight:800}.sub,.small{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:280px 1fr 280px;gap:15px}.card{background:#fffffff2;border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 8px 28px #0000000b}.card h2{font-size:16px;margin:0 0 12px}
+.field{display:grid;gap:5px;margin-bottom:10px}.field label{font-size:13px;font-weight:700}input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:15px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions{display:flex;gap:7px;flex-wrap:wrap}button{min-height:42px;padding:10px 13px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}button.primary{background:var(--a);color:#fff;border-color:var(--a)}button.danger{color:#ad4850}
+.canvasWrap{background:#eee5dc;border-radius:16px;padding:18px;min-height:600px;overflow:auto;display:flex;align-items:center;justify-content:center}
+#room{position:relative;background:#fff;border:3px solid #4d4850;flex:none;box-shadow:0 10px 30px #0002}.item{position:absolute;border:2px solid #756284;background:#ded6e7;border-radius:9px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:750;user-select:none;touch-action:none;cursor:grab;overflow:hidden}.item.sel{outline:3px solid var(--a);outline-offset:2px}.item.bad{background:#f1d2d6;border-color:#b84f58}.item.over{background:#f2e2c7;border-color:#a97938}
+.notice{margin-top:10px;padding:10px;border-radius:12px;background:#eee8f4;font-size:13px}.ok{color:#39785b}.warn{color:#a3474f}.versions{display:grid;gap:7px;max-height:250px;overflow:auto}.version{display:flex;gap:6px}.version button:first-child{flex:1;text-align:left}
+@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.center{grid-column:1/-1;grid-row:1}}@media(max-width:650px){.app{padding:12px}.grid{display:flex;flex-direction:column}.center{order:1}.left{order:2}.right{order:3}.title{font-size:24px}.canvasWrap{min-height:420px;padding:10px}}
+</style></head><body><div class="app">
+<header class="top"><div><div class="title">🏠 Room Planner</div><div class="sub">Bouw je kamer digitaal voordat je echt gaat schuiven.</div></div><div class="actions"><button id="undo">↶</button><button id="redo">↷</button><button id="install" class="primary" hidden>📱 Installeer</button></div></header>
+<main class="grid">
+<aside class="card left"><h2>📐 Kamer</h2><div class="row">
+<div class="field"><label>Breedte (m)</label><input id="rw" type="number" min="1" step=".01" value="3.80"></div>
+<div class="field"><label>Lengte (m)</label><input id="rh" type="number" min="1" step=".01" value="4.20"></div></div>
+<button class="primary" id="apply">Kamer aanpassen</button><hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+<h2>🪑 Meubel</h2><div class="field"><label>Naam</label><input id="name" placeholder="Bijv. bed"></div>
+<div class="row"><div class="field"><label>Breedte (cm)</label><input id="iw" type="number" min="1" value="90"></div><div class="field"><label>Diepte (cm)</label><input id="ih" type="number" min="1" value="200"></div></div>
+<button class="primary" id="add">＋ Toevoegen</button><p class="small">Kamer = meter. Meubels = centimeter.</p>
+<label class="small"><input id="grid" type="checkbox" checked> Raster tonen</label></aside>
+
+<section class="card center"><div style="display:flex;justify-content:space-between"><h2 style="margin:0">🗺️ Plattegrond</h2><span id="scale" class="small"></span></div>
+<div class="canvasWrap"><div id="room"></div></div><div id="status" class="notice ok">✓ Alles past binnen de kamer.</div></section>
+
+<aside class="card right"><h2>✏️ Meubel bewerken</h2><div id="none" class="small">Klik op een meubel.</div>
+<div id="editor" hidden><div class="field"><label>Naam</label><input id="en"></div><div class="row">
+<div class="field"><label>Breedte (cm)</label><input id="ew" type="number"></div><div class="field"><label>Diepte (cm)</label><input id="eh" type="number"></div></div>
+<div class="row"><div class="field"><label>X (cm)</label><input id="ex" type="number"></div><div class="field"><label>Y (cm)</label><input id="ey" type="number"></div></div>
+<div class="field"><label>Draaiing</label><select id="er"><option>0</option><option>90</option><option>180</option><option>270</option></select></div>
+<div class="actions"><button class="primary" id="update">Toepassen</button><button class="danger" id="del">Verwijderen</button></div></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><h2>💾 Ontwerpen</h2>
+<div class="actions"><input id="vname" placeholder="Bijv. Idee 1" style="flex:1;min-width:100px"><button id="save">Opslaan</button></div><div id="versions" class="versions"></div>
+<p class="small">Ontwerpen worden lokaal op dit apparaat bewaard zolang je deze pagina gebruikt.</p></aside></main></div>
+<script>
+(()=>{const $=id=>document.getElementById(id);let room={w:380,h:420},items=[],sel=null,hist=[],future=[],versions=[],scale=1,drag=null;
+const cp=x=>JSON.parse(JSON.stringify(x)),state=()=>JSON.stringify({room,items});function remember(){hist.push(state());if(hist.length>40)hist.shift();future=[]}
+function restore(s){let x=JSON.parse(s);room=x.room;items=x.items;sel=null;sync();render()}function sync(){$('rw').value=(room.w/100).toFixed(2);$('rh').value=(room.h/100).toFixed(2)}
+function dims(i){return i.r%180===0?{w:i.w,h:i.h}:{w:i.h,h:i.w}}function overlap(a,b){let A=dims(a),B=dims(b);return a.x<B.x+B.w&&a.x+A.w>b.x&&a.y<B.y+B.h&&a.y+A.h>b.y}
+function render(){scale=Math.min(1,680/room.w,680/room.h);let r=$('room');r.style.width=room.w*scale+'px';r.style.height=room.h*scale+'px';r.style.backgroundImage=$('grid').checked?'linear-gradient(#0000000b 1px,transparent 1px),linear-gradient(90deg,#0000000b 1px,transparent 1px)':'none';r.style.backgroundSize=25*scale+'px '+25*scale+'px';$('scale').textContent='Schaal: '+Math.round(scale*100)+'%';r.innerHTML='';
+items.forEach(i=>{let d=dims(i),e=document.createElement('div');e.className='item'+(sel===i.id?' sel':'');let outside=i.x<0||i.y<0||i.x+d.w>room.w||i.y+d.h>room.h,coll=items.some(o=>o.id!==i.id&&overlap(i,o));if(outside)e.classList.add('bad');else if(coll)e.classList.add('over');e.style.left=i.x*scale+'px';e.style.top=i.y*scale+'px';e.style.width=d.w*scale+'px';e.style.height=d.h*scale+'px';e.textContent=i.name;e.onpointerdown=x=>start(x,i);r.append(e)});editor();status();versionsUI()}
+function start(e,i){e.preventDefault();sel=i.id;render();remember();drag={i,sx:e.clientX,sy:e.clientY,ox:i.x,oy:i.y};document.addEventListener('pointermove',move);document.addEventListener('pointerup',end,{once:true})}
+function move(e){if(!drag)return;drag.i.x=Math.round(drag.ox+(e.clientX-drag.sx)/scale);drag.i.y=Math.round(drag.oy+(e.clientY-drag.sy)/scale);render()}function end(){document.removeEventListener('pointermove',move);drag=null}
+function editor(){let i=items.find(x=>x.id===sel);$('none').hidden=!!i;$('editor').hidden=!i;if(!i)return;$('en').value=i.name;$('ew').value=i.w;$('eh').value=i.h;$('ex').value=i.x;$('ey').value=i.y;$('er').value=i.r}
+function status(){let a=[];items.forEach(i=>{let d=dims(i);if(i.x<0||i.y<0||i.x+d.w>room.w||i.y+d.h>room.h)a.push('🔴 '+i.name+' staat buiten de kamer.')});for(let a1=0;a1<items.length;a1++)for(let b=a1+1;b<items.length;b++)if(overlap(items[a1],items[b]))a.push('🟠 '+items[a1].name+' overlapt met '+items[b].name+'.');$('status').className='notice '+(a.length?'warn':'ok');$('status').innerHTML=a.length?a.join('<br>'):'✓ Alles past binnen de kamer en meubels overlappen niet.'}
+function versionsUI(){let b=$('versions');b.innerHTML='';if(!versions.length){b.innerHTML='<div class="small">Nog geen ontwerpen.</div>';return}versions.forEach((v,n)=>{let row=document.createElement('div');row.className='version';let x=document.createElement('button');x.textContent=v.name;x.onclick=()=>{room=cp(v.room);items=cp(v.items);sel=null;sync();render()};let d=document.createElement('button');d.textContent='×';d.onclick=()=>{versions.splice(n,1);versionsUI()};row.append(x,d);b.append(row)})}
+$('apply').onclick=()=>{remember();room.w=Math.max(100,(Number($('rw').value)||3.8)*100);room.h=Math.max(100,(Number($('rh').value)||4.2)*100);render()};
+$('grid').onchange=render;$('add').onclick=()=>{remember();let w=Math.max(1,Number($('iw').value)||90),h=Math.max(1,Number($('ih').value)||90);let i={id:Date.now()+Math.random(),name:$('name').value.trim()||'Meubel',w,h,x:Math.max(0,(room.w-w)/2),y:Math.max(0,(room.h-h)/2),r:0};items.push(i);sel=i.id;$('name').value='';render()};
+$('update').onclick=()=>{let i=items.find(x=>x.id===sel);if(!i)return;remember();i.name=$('en').value.trim()||'Meubel';i.w=Math.max(1,Number($('ew').value)||i.w);i.h=Math.max(1,Number($('eh').value)||i.h);i.x=Number($('ex').value)||0;i.y=Number($('ey').value)||0;i.r=Number($('er').value)||0;render()};
+$('del').onclick=()=>{if(sel==null)return;remember();items=items.filter(i=>i.id!==sel);sel=null;render()};$('save').onclick=()=>{versions.unshift({name:$('vname').value.trim()||'Ontwerp '+(versions.length+1),room:cp(room),items:cp(items)});$('vname').value='';versionsUI()};
+$('undo').onclick=()=>{if(hist.length){future.push(state());restore(hist.pop())}};$('redo').onclick=()=>{if(future.length){hist.push(state());restore(future.pop())}};
+let deferred;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('install').hidden=false});$('install').onclick=async()=>{if(deferred){await deferred.prompt();deferred=null;$('install').hidden=true}};if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});sync();render()})();
+</script></body></html>
