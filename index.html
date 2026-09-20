@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4c9c8">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<title>Roomly — Room Planner</title>
+<style>
+:root{
+ --cream:#fbf7f0;--paper:#fffdf9;--ink:#403c39;--muted:#837a73;
+ --pink:#efc2c4;--pink2:#f7dfe0;--sage:#b9c9ac;--blue:#b9d7e7;
+ --yellow:#f1d993;--wood:#d5ad82;--line:#e7ded5;--shadow:0 16px 40px rgba(78,61,48,.12);
+ --radius:22px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;background:linear-gradient(135deg,#fbf7f0,#f5eee5);color:var(--ink)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:flex}
+.sidebar{width:245px;background:rgba(255,253,249,.94);border-right:1px solid var(--line);padding:22px 15px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;z-index:5}
+.brand{display:flex;align-items:center;gap:11px;padding:5px 8px 22px}
+.brand img{width:46px;height:46px;border-radius:14px;box-shadow:0 7px 18px rgba(0,0,0,.10)}
+.brand b{font-size:21px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.nav{display:grid;gap:7px}.nav button{border:0;background:transparent;text-align:left;padding:13px 14px;border-radius:15px;color:var(--muted);font-weight:700}
+.nav button.active,.nav button:hover{background:var(--pink2);color:var(--ink)}
+.side-bottom{margin-top:auto;display:grid;gap:8px}.mini-card{background:#f5f0e8;border:1px solid var(--line);border-radius:17px;padding:13px;font-size:12px}
+.main{flex:1;min-width:0}.topbar{height:74px;background:rgba(255,253,249,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:4}
+.page{display:none;padding:28px;max-width:1400px;margin:auto}.page.active{display:block}
+h1{margin:0 0 7px;font-size:31px}h2{margin:0 0 8px}.sub{color:var(--muted);margin:0 0 24px}
+.btn{border:1px solid var(--line);background:var(--paper);padding:10px 14px;border-radius:14px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.04)}
+.btn.primary{background:var(--ink);color:white;border-color:var(--ink)}.btn.pink{background:var(--pink);border-color:#e5afb1}.btn.green{background:var(--sage)}.btn.danger{background:#f5d8d8}
+.grid{display:grid;gap:18px}.cards{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.stat{display:flex;justify-content:space-between;align-items:flex-start}.stat .num{font-size:32px;font-weight:900}.emoji{font-size:28px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}
+.room-card{min-height:190px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(145deg,#fffdf9,#f7eee5)}
+.room-preview{height:95px;border-radius:16px;background:#f3eadf;border:1px solid #e4d8ca;position:relative;overflow:hidden}
+.room-preview:before{content:"";position:absolute;inset:13px;border:2px solid #887a6c;border-radius:5px}
+.room-preview .bed{position:absolute;width:34%;height:25%;left:22%;top:31%;background:var(--blue);border-radius:7px}.room-preview .desk{position:absolute;width:21%;height:19%;right:18%;top:28%;background:var(--wood);border-radius:5px}.room-preview .rug{position:absolute;width:28%;height:24%;left:28%;bottom:15%;background:#f1dec8;border-radius:50%}
+.editor{display:grid;grid-template-columns:320px minmax(420px,1fr) 290px;gap:18px;align-items:start}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:var(--shadow)}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:var(--muted);font-weight:800}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}.field textarea{min-height:90px;resize:vertical}
+.room-wrap{background:#eee4d9;border-radius:24px;padding:22px;min-height:600px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.room{position:relative;background:#fffaf0;border:4px solid #5c544d;box-shadow:0 15px 35px rgba(70,54,43,.16);overflow:hidden;background-image:linear-gradient(#eee7dc 1px,transparent 1px),linear-gradient(90deg,#eee7dc 1px,transparent 1px);background-size:28px 28px}
+.furniture{position:absolute;border:2px solid #5c544d;border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:900;user-select:none;touch-action:none;box-shadow:0 7px 12px rgba(0,0,0,.10)}
+.furniture.selected{outline:3px solid #efb9bb;outline-offset:2px}
+.furniture .layer-dot{position:absolute;right:4px;top:4px;width:7px;height:7px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25)}
+.layer-row{display:flex;align-items:center;gap:8px}
+.layer-row .layer-number{font-size:10px;color:var(--muted);min-width:22px}
+.layer-row.selected-row{background:#fff4f3}.furniture.bed{background:var(--blue)}.furniture.desk{background:var(--wood)}.furniture.wardrobe{background:var(--sage)}.furniture.sofa{background:var(--pink)}.furniture.rug{background:#f0ddc8;border-radius:50%}.furniture.plant{background:#c8d9b9;border-radius:50%}.furniture.other{background:#eadfe9}
+.legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.pill{padding:6px 9px;border-radius:99px;background:#f4eee7;font-size:11px;font-weight:800}
+.furniture-list{display:grid;gap:8px;max-height:360px;overflow:auto}.furn-row{display:flex;justify-content:space-between;align-items:center;padding:9px;border:1px solid var(--line);border-radius:12px}.furn-row button{border:0;background:transparent}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:15px}.tab{border:1px solid var(--line);background:var(--paper);padding:9px 13px;border-radius:12px;font-weight:800}.tab.active{background:var(--ink);color:white}
+.library{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.lib-item{min-height:150px;display:flex;flex-direction:column;justify-content:space-between}.lib-art{height:75px;border-radius:15px;position:relative;background:#f4eee6;overflow:hidden}.lib-art:before{content:"";position:absolute;inset:16px;border:2px solid #6b6159;border-radius:5px}.art-bed{background:var(--blue)!important}.art-desk{background:var(--wood)!important}.art-wardrobe{background:var(--sage)!important}.art-sofa{background:var(--pink)!important}.art-rug{background:#f0ddc8!important;border-radius:50%!important}.art-plant{background:#c8d9b9!important;border-radius:50%!important}
+.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:13px}.empty{padding:35px;text-align:center;color:var(--muted)}
+.toast{position:fixed;right:22px;bottom:22px;background:#403c39;color:white;padding:12px 16px;border-radius:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(15px);pointer-events:none;transition:.25s;z-index:20}.toast.show{opacity:1;transform:none}
+.mobile-nav{display:none}
+@media(max-width:1050px){.editor{grid-template-columns:1fr}.room-wrap{min-height:450px}.sidebar{width:210px}}
+@media(max-width:760px){.app{display:block}.sidebar{display:none}.topbar{height:64px;padding:0 15px}.page{padding:18px 14px 90px}h1{font-size:26px}.mobile-nav{display:grid;position:fixed;bottom:0;left:0;right:0;background:#fffdf9;border-top:1px solid var(--line);grid-template-columns:repeat(5,1fr);z-index:10}.mobile-nav button{border:0;background:transparent;padding:10px 3px;font-size:10px;color:var(--muted)}.mobile-nav button.active{color:var(--ink);font-weight:900}.room-wrap{padding:10px;min-height:380px}.topbar .actions .hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><img src="icons/icon-192.png"><div><b>Roomly</b><small>room planner</small></div></div>
+  <nav class="nav">
+    <button data-page="home" class="active">🏠 Dashboard</button>
+    <button data-page="planner">🛋️ Room planner</button>
+    <button data-page="furniture">🪑 Meubels</button>
+    <button data-page="saved">💾 Mijn kamers</button>
+    <button data-page="ideas">✨ Ideeën</button>
+    <button data-page="settings">⚙️ Instellingen</button>
+  </nav>
+  <div class="side-bottom"><div class="mini-card">💡 <b>Tip</b><br>Sleep meubels, draai ze en test je kamer zonder iets te verplaatsen.</div><button class="btn primary" id="installBtn" style="display:none">📲 Installeer app</button></div>
+</aside>
+
+<main class="main">
+<header class="topbar"><div><b id="topTitle">Dashboard</b></div><div class="actions"><button class="btn pink" id="quickNew">＋ Nieuwe kamer</button></div></header>
+
+<section class="page active" id="page-home">
+<h1>Welkom in Roomly ✨</h1><p class="sub">Ontwerp, probeer uit en bewaar zoveel kamers als je wilt.</p>
+<div class="grid cards">
+ <div class="card stat"><div><div class="sub">Kamers</div><div class="num" id="statRooms">0</div></div><div class="emoji">🏠</div></div>
+ <div class="card stat"><div><div class="sub">Meubels in huidige kamer</div><div class="num" id="statFurniture">0</div></div><div class="emoji">🛋️</div></div>
+ <div class="card stat"><div><div class="sub">Versies</div><div class="num" id="statVersions">0</div></div><div class="emoji">💾</div></div>
+</div>
+<div class="grid" style="grid-template-columns:2fr 1fr;margin-top:18px">
+ <div class="card"><h2>Jouw kamers</h2><p class="sub">Ga verder waar je gebleven was.</p><div id="homeRooms" class="grid cards"></div></div>
+ <div class="card"><h2>Snel starten</h2><div class="actions" style="margin-top:15px"><button class="btn primary" id="startPlanner">🛋️ Open planner</button><button class="btn" id="startLibrary">🪑 Kies meubels</button></div></div>
+</div>
+</section>
+
+<section class="page" id="page-planner">
+<h1 id="plannerHeading">Room planner</h1><p class="sub">Room in meters • meubels in centimeters • sleep alles op zijn plek.</p>
+<div class="tabs" id="roomTabs"></div>
+<div class="editor">
+ <div class="panel">
+  <h2>📐 Kamer</h2>
+  <div class="field"><label>Naam</label><input id="roomName"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+   <div class="field"><label>Breedte (m)</label><input id="roomW" type="number" step=".01"></div>
+   <div class="field"><label>Lengte (m)</label><input id="roomD" type="number" step=".01"></div>
+  </div>
+  <button class="btn pink" id="applyRoom" style="width:100%">✓ Kamer toepassen</button>
+  <div class="field" style="margin-top:12px"><label>🧱 Kamerstijl</label>
+   <select id="roomStyle">
+    <option value="warm">Warm & gezellig</option><option value="light">Licht & rustig</option><option value="colorful">Colorful</option><option value="minimal">Minimal</option>
+   </select>
+  </div>
+  <button class="btn" id="styleBtn" style="width:100%">🎨 Pas sfeer aan</button>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>➕ Meubel toevoegen</h2>
+  <div class="field"><label>Naam</label><input id="newName" placeholder="Bijv. bed"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+   <div class="field"><label>Breedte (cm)</label><input id="newW" type="number" value="90"></div>
+   <div class="field"><label>Diepte (cm)</label><input id="newD" type="number" value="200"></div>
+  </div>
+  <div class="field"><label>Type</label><select id="newType"><option value="bed">🛏️ Bed</option><option value="desk">🖥️ Bureau</option><option value="wardrobe">🚪 Kast</option><option value="sofa">🛋️ Bank</option><option value="rug">🧸 Kleed</option><option value="plant">🌿 Plant</option><option value="other">📦 Anders</option></select></div>
+  <button class="btn primary" id="addFurniture" style="width:100%">＋ Toevoegen</button>
+  <div class="legend"><span class="pill">🖱️ slepen</span><span class="pill">↻ draaien</span><span class="pill">📏 cm exact</span></div>
+ </div>
+
+ <div>
+  <div class="room-wrap"><div id="room" class="room"></div></div>
+  <div class="actions" style="margin-top:12px">
+   <button class="btn" id="undoBtn">↶ Ongedaan</button><button class="btn" id="redoBtn">↷ Opnieuw</button>
+   <button class="btn green" id="saveVersion">💾 Bewaar versie</button><button class="btn" id="duplicateRoom">⧉ Dupliceer kamer</button>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h2>🎛️ Geselecteerd</h2>
+  <div id="selectedEmpty" class="empty">Klik op een meubel om het te bewerken.</div>
+  <div id="selectedEditor" style="display:none">
+   <div class="field"><label>Naam</label><input id="editName"></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="field"><label>Breedte (cm)</label><input id="editW" type="number"></div>
+    <div class="field"><label>Diepte (cm)</label><input id="editD" type="number"></div>
+   </div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="field"><label>X (cm)</label><input id="editX" type="number"></div>
+    <div class="field"><label>Y (cm)</label><input id="editY" type="number"></div>
+   </div>
+   <div class="field"><label>Draaiing</label><select id="editRot"><option>0</option><option>90</option><option>180</option><option>270</option></select></div>
+   <button class="btn" id="rotateBtn" style="width:100%">↻ 90° draaien</button>
+   <div class="actions" style="margin-top:8px">
+    <button class="btn" id="backBtn" style="flex:1">⬇️ Naar achter</button>
+    <button class="btn" id="frontBtn" style="flex:1">⬆️ Naar voren</button>
+   </div>
+   <button class="btn" id="bottomBtn" style="width:100%;margin-top:8px">🔽 Helemaal onder</button>
+   <button class="btn" id="topBtn" style="width:100%;margin-top:8px">🔼 Helemaal boven</button>
+   <button class="btn" id="duplicateFurnitureBtn" style="width:100%;margin-top:8px">⧉ Dupliceer meubel</button>
+   <button class="btn danger" id="deleteBtn" style="width:100%;margin-top:8px">🗑️ Verwijder meubel</button>
+   <div id="warning" style="margin-top:12px"></div>
+  </div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>🪑 In deze kamer</h2><div class="furniture-list" id="furnitureList"></div>
+  <div style="margin-top:14px;background:#f7f0e8;border-radius:14px;padding:11px;font-size:12px">
+   <b>🧅 Lagen</b><br>
+   Meubels kunnen elkaar overlappen. Een kleed kan bijvoorbeeld <b>onder</b> je bed liggen, terwijl een laptop <b>boven</b> een bureau staat.
+  </div>
+ </div>
+</div>
+</section>
+
+<section class="page" id="page-furniture">
+<h1>Meubelbibliotheek 🪑</h1><p class="sub">Snelle startmaten — pas ze daarna exact aan.</p>
+<div class="grid library" id="library"></div>
+</section>
+
+<section class="page" id="page-saved">
+<h1>Mijn kamers 💾</h1><p class="sub">Je kamers en opgeslagen versies blijven op dit apparaat staan.</p>
+<div class="grid cards" id="savedRooms"></div>
+</section>
+
+<section class="page" id="page-ideas">
+<h1>Ideeën & inspiratie ✨</h1><p class="sub">Handige mini-checklists voor het plannen van je kamer.</p>
+<div class="grid cards">
+ <div class="card"><div class="emoji">📏</div><h2>Meet eerst</h2><p>Noteer breedte, lengte, deuren, ramen en radiatoren. Die vaste punten bepalen wat echt past.</p></div>
+ <div class="card"><div class="emoji">🚪</div><h2>Loopruimte</h2><p>Laat rondom deuren en belangrijke looproutes genoeg vrije ruimte. Test verschillende posities in de planner.</p></div>
+ <div class="card"><div class="emoji">☀️</div><h2>Licht</h2><p>Zet je bureau of leesplek waar je prettig daglicht hebt en kijk of meubels ramen blokkeren.</p></div>
+ <div class="card"><div class="emoji">🧸</div><h2>Gezelligheid</h2><p>Gebruik een kleed, lampen, planten, foto's en kleine accessoires om je ontwerp persoonlijk te maken.</p></div>
+</div>
+</section>
+
+<section class="page" id="page-settings">
+<h1>Instellingen ⚙️</h1><p class="sub">Pas Roomly aan of zet alles terug.</p>
+<div class="card" style="max-width:700px">
+ <h2>Opslag</h2><p class="sub">Roomly gebruikt lokale opslag in je browser. Je gegevens verlaten dit apparaat niet via deze app.</p>
+ <div class="actions"><button class="btn" id="exportBtn">⬇️ Exporteer kamers</button><label class="btn">⬆️ Importeer<input id="importInput" type="file" accept=".json" style="display:none"></label><button class="btn danger" id="resetBtn">🗑️ Wis alle kamers</button></div>
+</div>
+</section>
+
+<div class="mobile-nav">
+ <button data-page="home" class="active">🏠<br>Home</button><button data-page="planner">🛋️<br>Planner</button><button data-page="furniture">🪑<br>Meubels</button><button data-page="saved">💾<br>Kamers</button><button data-page="settings">⚙️<br>Meer</button>
+</div>
+</main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const key="roomly-deluxe-v1";
+let data=JSON.parse(localStorage.getItem(key)||"null")||{rooms:[],active:0,versions:{}};
+let history=[],future=[],selected=null,installPrompt=null;
+
+const presets=[
+ ["Bed 1-persoons",90,200,"bed"],["Bed 2-persoons",160,200,"bed"],["Bureau",120,60,"desk"],["Kledingkast",100,60,"wardrobe"],["Bank",180,85,"sofa"],["Vloerkleed",160,230,"rug"],["Plant",35,35,"plant"],["Nachtkastje",45,45,"other"],["Boekenkast",80,30,"other"],["Commode",90,45,"other"]
+];
+
+function save(){localStorage.setItem(key,JSON.stringify(data)); updateStats();}
+function toast(t){let x=$("#toast");x.textContent=t;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),1800)}
+function room(){return data.rooms[data.active]}
+function snapshot(){history.push(JSON.stringify(room()));if(history.length>40)history.shift();future=[]}
+function restore(str){data.rooms[data.active]=JSON.parse(str);save();renderPlanner()}
+function normalizeLayers(){
+ data.rooms.forEach(r=>{
+  r.furniture.forEach((f,i)=>{if(!f.z)f.z=i+1});
+  r.furniture.sort((a,b)=>(a.z||1)-(b.z||1)).forEach((f,i)=>f.z=i+1);
+ });
+}
+function ensure(){if(!data.rooms.length){data.rooms=[{id:crypto.randomUUID(),name:"Mijn slaapkamer",w:3.8,d:4.2,furniture:[],versions:[]}];data.active=0;save()}}
+
+function showPage(p){
+ $$(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+p));
+ $$(".nav button,.mobile-nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===p));
+ $("#topTitle").textContent={home:"Dashboard",planner:"Room planner",furniture:"Meubels",saved:"Mijn kamers",ideas:"Ideeën",settings:"Instellingen"}[p];
+ if(p==="planner")renderPlanner(); if(p==="saved")renderSaved(); if(p==="furniture")renderLibrary(); if(p==="home")renderHome();
+}
+$$("[data-page]").forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+$("#quickNew").onclick=()=>newRoom();
+
+function newRoom(){
+ const n=prompt("Naam van je nieuwe kamer?","Nieuwe kamer"); if(!n)return;
+ data.rooms.push({id:crypto.randomUUID(),name:n,w:3.8,d:4.2,furniture:[],versions:[]});
+ data.active=data.rooms.length-1; save(); showPage("planner"); toast("Nieuwe kamer gemaakt ✨");
+}
+$("#startPlanner").onclick=()=>showPage("planner");
+$("#startLibrary").onclick=()=>showPage("furniture");
+
+function updateStats(){
+ $("#statRooms").textContent=data.rooms.length;
+ $("#statFurniture").textContent=room()?.furniture.length||0;
+ $("#statVersions").textContent=data.rooms.reduce((a,r)=>a+(r.versions?.length||0),0);
+}
+function renderHome(){
+ updateStats();
+ $("#homeRooms").innerHTML=data.rooms.length?data.rooms.slice(0,6).map((r,i)=>`
+ <div class="card room-card"><div><div class="room-preview"><span class="bed"></span><span class="desk"></span><span class="rug"></span></div>
+ <h2 style="margin-top:12px">${esc(r.name)}</h2><p class="sub">${r.w.toFixed(2)} × ${r.d.toFixed(2)} m • ${r.furniture.length} meubels</p></div>
+ <button class="btn pink" onclick="openRoom(${i})">Open kamer →</button></div>`).join(""):`<div class="empty">Nog geen kamers.</div>`;
+}
+function openRoom(i){data.active=i;save();showPage("planner")}
+function renderRoomTabs(){
+ $("#roomTabs").innerHTML=data.rooms.map((r,i)=>`<button class="tab ${i===data.active?"active":""}" onclick="openRoom(${i})">${esc(r.name)}</button>`).join("")+
+ `<button class="tab" onclick="newRoom()">＋</button>`;
+}
+function renderPlanner(){
+ ensure(); const r=room(); renderRoomTabs();
+ $("#roomName").value=r.name;$("#roomW").value=r.w;$("#roomD").value=r.d;
+ $("#plannerHeading").textContent=r.name;
+ const el=$("#room"), scale=Math.min(1050/r.w,620/r.d,130);
+ el.style.width=(r.w*scale)+"px";el.style.height=(r.d*scale)+"px";el.dataset.scale=scale;
+ el.innerHTML="";
+ r.furniture.forEach(f=>{
+   const div=document.createElement("div");div.className="furniture "+f.type+(selected===f.id?" selected":"");
+   const fw=f.rot%180?f.d:f.w, fd=f.rot%180?f.w:f.d;
+   div.style.width=(fw*scale)+"px";div.style.height=(fd*scale)+"px";div.style.left=(f.x*scale)+"px";div.style.top=(f.y*scale)+"px";
+   div.style.zIndex=(f.z||1);
+   div.innerHTML='<span>'+esc(f.icon+" "+f.name)+'</span><span class="layer-dot" title="Laag '+(f.z||1)+'"></span>';
+   div.dataset.id=f.id;
+   div.onpointerdown=e=>startDrag(e,f.id);el.appendChild(div);
+ });
+ renderFurnitureList();renderSelected();updateStats();
+}
+function renderFurnitureList(){
+ const items=[...room().furniture].sort((a,b)=>(b.z||1)-(a.z||1));
+ $("#furnitureList").innerHTML=items.length?items.map((f,idx)=>`<div class="furn-row layer-row ${selected===f.id?"selected-row":""}">
+   <span class="layer-number">#${f.z||1}</span><span style="flex:1">${f.icon} ${esc(f.name)}</span>
+   <button onclick="selectFurniture('${f.id}')">✎</button>
+ </div>`).join(""):`<div class="empty">Nog geen meubels.</div>`;
+}
+function selectFurniture(id){selected=id;renderPlanner()}
+function renderSelected(){
+ const f=room().furniture.find(x=>x.id===selected);$("#selectedEmpty").style.display=f?"none":"block";$("#selectedEditor").style.display=f?"block":"none";if(!f)return;
+ $("#editName").value=f.name;$("#editW").value=f.w;$("#editD").value=f.d;$("#editX").value=Math.round(f.x);$("#editY").value=Math.round(f.y);$("#editRot").value=f.rot;
+ validate(f);
+}
+function validate(f){
+ const r=room(), w=f.rot%180?f.d:f.w, d=f.rot%180?f.w:f.d;
+ let msgs=[];if(f.x<0||f.y<0||f.x+w>r.w||f.y+d>r.d)msgs.push("⚠️ Dit meubel valt buiten de kamer.");
+ for(const o of r.furniture){if(o.id===f.id)continue;const ow=o.rot%180?o.d:o.w,od=o.rot%180?o.w:o.d;if(f.x<o.x+ow&&f.x+w>o.x&&f.y<o.y+od&&f.y+d>o.y)msgs.push("⚠️ Dit meubel overlapt met "+o.name+".")}
+ $("#warning").innerHTML=msgs.length?`<div style="background:#f9e4e4;padding:10px;border-radius:12px;font-size:12px">${msgs.join("<br>")}</div>`:`<div style="background:#e5f0df;padding:10px;border-radius:12px;font-size:12px">✓ Past op deze plek</div>`;
+}
+function updateSelected(){
+ const f=room().furniture.find(x=>x.id===selected);if(!f)return;snapshot();
+ f.name=$("#editName").value||"Meubel";f.w=+$("#editW").value||f.w;f.d=+$("#editD").value||f.d;f.x=+$("#editX").value||0;f.y=+$("#editY").value||0;f.rot=+$("#editRot").value||0;save();renderPlanner();
+}
+["editName","editW","editD","editX","editY","editRot"].forEach(id=>$( "#"+id).addEventListener("change",updateSelected));
+$("#rotateBtn").onclick=()=>{let f=room().furniture.find(x=>x.id===selected);if(!f)return;snapshot();f.rot=(f.rot+90)%360;save();renderPlanner()};
+
+function selectedFurniture(){return room().furniture.find(x=>x.id===selected)}
+function setLayer(mode){
+ const f=selectedFurniture(); if(!f)return;
+ snapshot();
+ const arr=room().furniture;
+ const current=f.z||1;
+ if(mode==="front") f.z=Math.max(...arr.map(x=>x.z||1),1)+1;
+ if(mode==="back") f.z=Math.max(1,current-1);
+ if(mode==="top") f.z=Math.max(...arr.map(x=>x.z||1),1)+1;
+ if(mode==="bottom") f.z=1;
+ // Normalize layer numbers so there are no gaps.
+ arr.sort((a,b)=>(a.z||1)-(b.z||1)).forEach((x,i)=>x.z=i+1);
+ save(); renderPlanner();
+}
+$("#frontBtn").onclick=()=>setLayer("front");
+$("#backBtn").onclick=()=>setLayer("back");
+$("#topBtn").onclick=()=>setLayer("top");
+$("#bottomBtn").onclick=()=>setLayer("bottom");
+
+$("#duplicateFurnitureBtn").onclick=()=>{
+ const f=selectedFurniture();if(!f)return;
+ snapshot();
+ const copy=structuredClone(f);copy.id=crypto.randomUUID();copy.name=f.name+" kopie";copy.x+=15;copy.y+=15;copy.z=Math.max(...room().furniture.map(x=>x.z||1),1)+1;
+ room().furniture.push(copy);selected=copy.id;normalizeLayers();save();renderPlanner();toast("Meubel gedupliceerd ✨");
+};
+$("#deleteBtn").onclick=()=>{if(!selected)return;snapshot();room().furniture=room().furniture.filter(f=>f.id!==selected);selected=null;save();renderPlanner();toast("Meubel verwijderd")};
+
+function startDrag(e,id){
+ e.preventDefault();selected=id;const r=room(),f=r.furniture.find(x=>x.id===id), el=$("#room"),scale=+el.dataset.scale;
+ snapshot();const sx=e.clientX,sy=e.clientY,ox=f.x,oy=f.y;
+ function move(ev){f.x=Math.round((ox+(ev.clientX-sx)/scale)*10)/10;f.y=Math.round((oy+(ev.clientY-sy)/scale)*10)/10;renderPlanner()}
+ function up(){window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);save();toast("Positie opgeslagen")}
+ window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
+}
+
+$("#styleBtn").onclick=()=>{
+ const style=$("#roomStyle").value;
+ const el=$("#room");
+ const styles={
+  warm:["#fffaf0","#eee2d2"],light:["#fffdf9","#edf3f5"],colorful:["#fff8f7","#f0e5ef"],minimal:["#fafafa","#e9e9e9"]
+ };
+ const [a,b]=styles[style];el.style.backgroundColor=a;el.style.backgroundImage=`linear-gradient(${b} 1px,transparent 1px),linear-gradient(90deg,${b} 1px,transparent 1px)`;
+ toast("Kamerstijl aangepast ✨");
+};
+$("#applyRoom").onclick=()=>{let r=room();snapshot();r.name=$("#roomName").value||"Mijn kamer";r.w=Math.max(.5,+$("#roomW").value||3);r.d=Math.max(.5,+$("#roomD").value||4);save();renderPlanner();toast("Kamer aangepast ✓")};
+$("#addFurniture").onclick=()=>{snapshot();let name=$("#newName").value||"Nieuw meubel",type=$("#newType").value,w=+$("#newW").value||50,d=+$("#newD").value||50;const icons={bed:"🛏️",desk:"🖥️",wardrobe:"🚪",sofa:"🛋️",rug:"🧸",plant:"🌿",other:"📦"};room().furniture.push({id:crypto.randomUUID(),name,w,d,x:10,y:10,rot:0,z:(room().furniture.length+1),type,icon:icons[type]});selected=room().furniture.at(-1).id;save();renderPlanner();toast(name+" toegevoegd ✨")};
+$("#saveVersion").onclick=()=>{const r=room();r.versions=r.versions||[];r.versions.unshift({date:new Date().toLocaleString("nl-NL"),name:"Versie "+(r.versions.length+1),furniture:structuredClone(r.furniture),w:r.w,d:r.d});save();toast("Versie bewaard 💾")};
+$("#duplicateRoom").onclick=()=>{const r=room();data.rooms.push({...structuredClone(r),id:crypto.randomUUID(),name:r.name+" – kopie",versions:[]});data.active=data.rooms.length-1;save();renderPlanner();toast("Kamer gedupliceerd")};
+$("#undoBtn").onclick=()=>{if(!history.length)return;future.push(JSON.stringify(room()));restore(history.pop())};
+$("#redoBtn").onclick=()=>{if(!future.length)return;history.push(JSON.stringify(room()));restore(future.pop())};
+
+function renderLibrary(){
+ $("#library").innerHTML=presets.map((p,i)=>`<div class="card lib-item"><div><div class="lib-art art-${p[3]}"></div><h2 style="font-size:17px;margin-top:10px">${p[0]}</h2><p class="sub">${p[1]} × ${p[2]} cm</p></div><button class="btn pink" onclick="addPreset(${i})">＋ In kamer</button></div>`).join("");
+}
+function addPreset(i){const p=presets[i];showPage("planner");setTimeout(()=>{snapshot();const icons={bed:"🛏️",desk:"🖥️",wardrobe:"🚪",sofa:"🛋️",rug:"🧸",plant:"🌿",other:"📦"};room().furniture.push({id:crypto.randomUUID(),name:p[0],w:p[1],d:p[2],x:10,y:10,rot:0,z:(room().furniture.length+1),type:p[3],icon:icons[p[3]]});selected=room().furniture.at(-1).id;save();renderPlanner();toast(p[0]+" toegevoegd ✨")},30)}
+
+function renderSaved(){
+ $("#savedRooms").innerHTML=data.rooms.map((r,i)=>`<div class="card"><h2>${esc(r.name)}</h2><p class="sub">${r.w.toFixed(2)} × ${r.d.toFixed(2)} m • ${r.furniture.length} meubels • ${r.versions?.length||0} versies</p>
+ <div class="actions"><button class="btn pink" onclick="openRoom(${i})">Open</button><button class="btn" onclick="renameRoom(${i})">Naam</button><button class="btn danger" onclick="deleteRoom(${i})">Verwijder</button></div>
+ ${(r.versions?.length)?`<details style="margin-top:14px"><summary>💾 Opgeslagen versies</summary><table class="table"><tr><th>Versie</th><th>Datum</th><th></th></tr>${r.versions.map((v,j)=>`<tr><td>${esc(v.name)}</td><td>${v.date}</td><td><button class="btn" onclick="loadVersion(${i},${j})">Herstel</button></td></tr>`).join("")}</table></details>`:""}</div>`).join("")||`<div class="empty">Nog geen kamers.</div>`;
+}
+function renameRoom(i){const n=prompt("Nieuwe naam:",data.rooms[i].name);if(n){data.rooms[i].name=n;save();renderSaved();}}
+function deleteRoom(i){if(!confirm("Deze kamer verwijderen?"))return;data.rooms.splice(i,1);data.active=Math.max(0,Math.min(data.active,data.rooms.length-1));save();ensure();renderSaved();renderHome()}
+function loadVersion(i,j){const r=data.rooms[i],v=r.versions[j];r.furniture=structuredClone(v.furniture);r.w=v.w;r.d=v.d;data.active=i;save();showPage("planner");toast("Versie hersteld ✓")}
+
+$("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="roomly-backup.json";a.click();URL.revokeObjectURL(a.href)};
+$("#importInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{data=JSON.parse(rd.result);ensure();save();renderHome();toast("Backup geïmporteerd ✓")}catch{toast("Dit bestand kon niet worden gelezen.")}};rd.readAsText(f)};
+$("#resetBtn").onclick=()=>{if(confirm("Alle kamers verwijderen?")){localStorage.removeItem(key);data={rooms:[],active:0};ensure();showPage("home");toast("Alles gewist")}};
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#installBtn").style.display="block"});
+$("#installBtn").onclick=async()=>{if(installPrompt){installPrompt.prompt();installPrompt=null}};
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+ensure();normalizeLayers();save();renderHome();updateStats();
+</script>
+</body>
+</html>

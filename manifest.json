@@ -1,0 +1,21 @@
+{
+  "name": "Roomly — Room Planner",
+  "short_name": "Roomly",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbf7f0",
+  "theme_color": "#efc2c4",
+  "description": "Een cute en uitgebreide room planner.",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
